@@ -7,25 +7,35 @@ from flask import Flask
 from threading import Thread
 import os
 
-# --- TẠO WEB SERVER ĐỂ TREO TRÊN RENDER ---
-app = Flask('')
+# ==========================================
+# CẤU HÌNH BIẾN MÔI TRƯỜNG (ENVIRONMENT)
+# ==========================================
+TOKEN = os.environ.get('BOT_TOKEN')
+CHANNEL_ID_STR = os.environ.get('CHANNEL_ID')
+# Đảm bảo chuyển ID kênh sang dạng số nguyên (integer), nếu không có trả về 0
+CHANNEL_ID = int(CHANNEL_ID_STR) if CHANNEL_ID_STR and CHANNEL_ID_STR.isdigit() else 0
+URL = "https://vulcanvalues.com/grow-a-garden/stock"
+
+# ==========================================
+# 1. WEB SERVER ĐỂ TREO TRÊN RENDER
+# ==========================================
+app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Bot Discord đang hoạt động 24/7!"
 
-def run():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
-    t = Thread(target=run)
+    t = Thread(target=run_web)
     t.start()
 
-# --- CẤU HÌNH BOT DISCORD ---
-TOKEN = os.environ.get('BOT_TOKEN') # Lấy từ Environment Variable trên Render
-CHANNEL_ID = int(os.environ.get('CHANNEL_ID', 0))
-URL = "https://vulcanvalues.com/grow-a-garden/stock"
-
+# ==========================================
+# 2. CẤU HÌNH BOT DISCORD
+# ==========================================
 class GrowBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -33,42 +43,67 @@ class GrowBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
 
     def get_stock_data(self):
+        """Hàm lấy dữ liệu website"""
         try:
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(URL, headers=headers, timeout=15)
-            soup = BeautifulSoup(response.text, 'html.parser')
             
+            if response.status_code != 200:
+                print(f"[LỖI WEB] Web trả về mã lỗi: {response.status_code}")
+                return None
+
+            soup = BeautifulSoup(response.text, 'html.parser')
             grid = soup.find('div', class_='grid')
-            if not grid: return None
+            if not grid:
+                print("[LỖI WEB] Không tìm thấy cấu trúc dữ liệu lưới (grid) trên web.")
+                return None
 
             cols = grid.find_all('div', recursive=False)
             stock_fields = []
+            
             for col in cols:
                 header = col.find('h2')
                 if not header: continue
                 
                 items = col.find_all('li')
-                item_list = "".join([f"• {li.find('span').get_text(' ', strip=True)}\n" for li in items if li.find('span')])
+                item_list = ""
+                for li in items:
+                    span = li.find('span')
+                    if span:
+                        item_list += f"• {span.get_text(' ', strip=True)}\n"
                 
                 if item_list:
-                    stock_fields.append({"name": f"📦 {header.get_text(strip=True)}", "value": item_list})
+                    stock_fields.append({
+                        "name": f"📦 {header.get_text(strip=True)}", 
+                        "value": item_list
+                    })
             return stock_fields
         except Exception as e:
-            print(f"Lỗi quét web: {e}")
+            print(f"[LỖI CÀO DỮ LIỆU] {e}")
             return None
 
-    async def on_ready(self):
-        print(f'✅ Đã đăng nhập: {self.user}')
-        if not self.update_stock_task.is_running():
-            self.update_stock_task.start()
+    # Khởi động loop thông qua setup_hook (Chuẩn mới của Discord.py)
+    async def setup_hook(self):
+        self.update_stock_task.start()
 
-    @tasks.loop(minutes=3) # Cập nhật mỗi 3 phút
+    async def on_ready(self):
+        print(f'✅ Đã đăng nhập thành công vào: {self.user}')
+        print(f'⚙️ Kênh đang cấu hình gửi tin: {CHANNEL_ID}')
+
+    # Đảm bảo bot load xong server mới bắt đầu quét
+    @tasks.loop(minutes=3)
     async def update_stock_task(self):
+        print("\n[LOG] Đang tiến hành quét dữ liệu từ web...")
         channel = self.get_channel(CHANNEL_ID)
-        if not channel: return
+        
+        if not channel:
+            print(f"❌ [LỖI KÊNH] Không tìm thấy kênh ID: {CHANNEL_ID}. Hãy kiểm tra ID và quyền View Channel của bot.")
+            return
 
         fields = self.get_stock_data()
-        if not fields: return
+        if not fields:
+            print("⚠️ [CẢNH BÁO] Quét web không ra kết quả (Web thay đổi HTML hoặc bị chặn).")
+            return
 
         embed = discord.Embed(
             title="🌿 GROW A GARDEN - MARKET STOCK",
@@ -80,9 +115,31 @@ class GrowBot(commands.Bot):
             embed.add_field(name=f['name'], value=f['value'], inline=False)
         
         embed.set_footer(text="Cập nhật tự động mỗi 3 phút")
-        await channel.send(embed=embed)
+        
+        try:
+            await channel.send(embed=embed)
+            print(f"[THÀNH CÔNG] Đã gửi tin nhắn lúc {datetime.now().strftime('%H:%M:%S')}")
+        except discord.Forbidden:
+            print("❌ [LỖI QUYỀN] Bot không có quyền 'Send Messages' hoặc 'Embed Links' trong kênh này.")
+        except Exception as e:
+            print(f"❌ [LỖI GỬI TIN] {e}")
 
+    # CHỜ BOT SẴN SÀNG 100% MỚI CHẠY LOOP
+    @update_stock_task.before_loop
+    async def before_update(self):
+        print("⏳ Đang chờ bot đồng bộ dữ liệu với Discord...")
+        await self.wait_until_ready()
+
+# ==========================================
+# 3. CHẠY CHƯƠNG TRÌNH
+# ==========================================
 if __name__ == "__main__":
-    keep_alive() # Chạy server web song song
-    bot = GrowBot()
-    bot.run(TOKEN)
+    keep_alive() # Khởi động web server Flask
+    
+    if not TOKEN:
+        print("❌ LỖI NGHIÊM TRỌNG: Chưa có BOT_TOKEN trong biến môi trường của Render!")
+    elif CHANNEL_ID == 0:
+        print("❌ LỖI NGHIÊM TRỌNG: ID Kênh không hợp lệ hoặc bị trống!")
+    else:
+        bot = GrowBot()
+        bot.run(TOKEN)
